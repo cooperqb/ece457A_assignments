@@ -64,6 +64,10 @@ def main(config: Dict) -> None:
     elif config['search_algorithm'] == 'vns':
         best_x, best_cost, x_history, cost_history = search_algorithms.vns(cost_function=cost_function, max_itr_ls=config['vns']['local_search']['max_itr'], max_itr_vns=config['vns']['max_itr'], 
                                                                            convergence_threshold_ls=config['vns']['local_search']['convergence_threshold'], num_neighbourhoods=config['vns']['num_neighbourhoods'], x_range=x_range)
+    
+    elif config['search_algorithm'] == 'gns':
+        best_x, best_cost, x_history, cost_history = search_algorithms.gns(cost_function=cost_function, max_itr_ls=config['gns']['vns']['local_search']['max_itr'], max_itr_vns=config['gns']['vns']['max_itr'], max_itr_gns=config['gns']['max_itr'],
+                                                                           convergence_threshold_ls=config['gns']['vns']['local_search']['convergence_threshold'], num_neighbourhoods=config['gns']['vns']['num_neighbourhoods'], num_layers=config['gns']['num_layers'], x_range=x_range)
         
     if len(best_x) == 2: 
         # If the dimensionality is 2, visualize the results.

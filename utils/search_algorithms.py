@@ -328,8 +328,8 @@ def ga(cost_function: Callable, population_size: int, max_itr: int, mutation_rat
 ##############################################################################################################
 ############ Variable Neighbour Search (VNS) #################################################################
 ##############################################################################################################
-def vns(cost_function: Callable, max_itr_vns: int, max_itr_ls: int, convergence_threshold_ls: float, 
-        num_neighbourhoods: int, x_range: Optional[List[List[float]]] = None) -> Tuple[np.array, float, List[np.array], List[float]]: 
+def vns(cost_function: Callable, max_itr_vns: int, max_itr_ls: int, convergence_threshold_ls: float, num_neighbourhoods: int, 
+        hide_progress_bar: Optional[bool] = False, x_range: Optional[List[List[float]]] = None) -> Tuple[np.array, float, List[np.array], List[float]]: 
     
     # Define Neighbourhoods (stripes)
     neighbourhoods: List[List[List[float]]] = []
@@ -355,8 +355,9 @@ def vns(cost_function: Callable, max_itr_vns: int, max_itr_ls: int, convergence_
     best_x = x_current
     best_cost = cost_current
 
-    progress_bar = tqdm(total=max_itr_vns, desc='VNS Iterations')
-    print(f"max iterations vns {max_itr_vns}")
+    if not hide_progress_bar:
+        progress_bar = tqdm(total=max_itr_vns, desc='VNS Iterations')
+
     for _ in range(max_itr_vns):
         ls_best_x, ls_best_cost, _, _ = local_search(cost_function=cost_function, max_itr=max_itr_ls, convergence_threshold=convergence_threshold_ls,
                                                      x_range=current_neighbourhood, hide_progress_bar=True)     
@@ -366,17 +367,19 @@ def vns(cost_function: Callable, max_itr_vns: int, max_itr_ls: int, convergence_
             k = 0
             best_cost = ls_best_cost
             best_x = ls_best_x
+
         else:
             k = (k+1) % num_neighbourhoods
         current_neighbourhood = neighbourhoods[k]  
-
         x_history.append(ls_best_x)
         cost_history.append(ls_best_cost) 
 
         # Update tqdm progress bar
-        progress_bar.update(1)
+        if not hide_progress_bar:
+            progress_bar.update(1)
     
-    progress_bar.close()
+    if not hide_progress_bar:
+        progress_bar.close()
 
     print(f"best X: {best_x}")
     print(f"best cost: {best_cost}")
@@ -384,7 +387,56 @@ def vns(cost_function: Callable, max_itr_vns: int, max_itr_ls: int, convergence_
     return best_x, best_cost, x_history, cost_history
 
 
+##############################################################################################################
+############ Generalized Neighbour Search (GNS) ##############################################################
+##############################################################################################################
+def gns(cost_function: Callable, max_itr_gns: int, max_itr_vns: int, max_itr_ls: int, convergence_threshold_ls: float, 
+        num_layers: int, num_neighbourhoods: int, x_range: Optional[List[List[float]]] = None) -> Tuple[np.array, float, List[np.array], List[float]]: 
     
+    # Define Layers (hypercubes about center of optimization landscape)
+    layers: List[List[List[float, float]]] = []
+    center: List[float] = [((x[0] + x[1])/2) for x in x_range]
+    layer_width: List[float] = [(x[1] - x[0])/(2*num_layers) for x in x_range]
+
+    for i in range(num_layers):
+        layer: List[List[float, float]] = []
+        for d in range(len(x_range)):
+            x_min = center[d] - (i+1)*layer_width[d]
+            x_max = center[d] + (i+1)*layer_width[d]
+            layer.append([x_min, x_max])
+        layers.append(layer)
+
+
+    # Initialize variables
+    x_history = []
+    cost_history = []
+
+    best_x = None
+    best_cost = float('inf')
+
+    progress_bar = tqdm(total=max_itr_gns, desc='GNS Iterations')
+
+    # Perform parallel vns
+    for _ in range(max_itr_gns):
+        for layer in layers:
+            vns_best_x, vns_best_cost, _, _ = vns(cost_function=cost_function, max_itr_vns=max_itr_vns, max_itr_ls=max_itr_ls, convergence_threshold_ls=convergence_threshold_ls,
+                                                        num_neighbourhoods=num_neighbourhoods, x_range=layer, hide_progress_bar=True)      
+
+            if vns_best_cost < best_cost:
+                best_cost = vns_best_cost
+                best_x = vns_best_x
+            x_history.append(vns_best_x)
+            cost_history.append(vns_best_cost) 
+
+            # Update tqdm progress bar
+            progress_bar.update(1)
+    
+    progress_bar.close()
+
+    print(f"best X: {best_x}")
+    print(f"best cost: {best_cost}")
+
+    return best_x, best_cost, x_history, cost_history
 
 
 ##############################################################################################################
