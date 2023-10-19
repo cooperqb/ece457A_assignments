@@ -15,6 +15,7 @@ def schwefel(x: List[float]) -> float:
     d = len(x)
     f = 418.9829 * d
     for xi in x:
+        # TODO: why does it get stuck here frequently?
         f = f - (xi * np.sin(np.sqrt(np.abs(xi))))
     return f
 

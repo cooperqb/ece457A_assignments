@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from typing import List, Callable, Optional, Dict
 
 
@@ -33,7 +34,7 @@ def plot_results(best_x: np.array, best_cost: float, x_history: List[np.array], 
 
     # Plot the optimization path
     ax.plot(x1_history, x2_history, cost_history, marker='o', linestyle='-', color='red', label='Optimization path')
-    ax.plot(best_x[0], best_x[1], best_cost, marker='o', linestyle='-', color='blue', label='Best solution')
+    ax.plot([best_x[0]], [best_x[1]], [best_cost], marker='o', linestyle='-', color='blue', label='Best solution')
 
     ax.set_xlabel('x1')
     ax.set_ylabel('x2')

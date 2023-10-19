@@ -61,7 +61,10 @@ def main(config: Dict) -> None:
         best_x, best_cost, x_history, cost_history, individuals = search_algorithms.ga(cost_function=cost_function, population_size=config['ga']['population_size'], max_itr=config['ga']['max_itr'],
                                                                                        mutation_rate=config['ga']['mutation_rate'], crossover_rate=config['ga']['crossover_rate'], x_initial=config['x_initial'],
                                                                                        x_range=x_range)
-
+    elif config['search_algorithm'] == 'vns':
+        best_x, best_cost, x_history, cost_history = search_algorithms.vns(cost_function=cost_function, max_itr_ls=config['vns']['local_search']['max_itr'], max_itr_vns=config['vns']['max_itr'], 
+                                                                           convergence_threshold_ls=config['vns']['local_search']['convergence_threshold'], num_neighbourhoods=config['vns']['num_neighbourhoods'], x_range=x_range)
+        
     if len(best_x) == 2: 
         # If the dimensionality is 2, visualize the results.
         plot_utils.plot_results(best_x=best_x, best_cost=best_cost,

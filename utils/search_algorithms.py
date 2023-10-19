@@ -287,6 +287,9 @@ def ga(cost_function: Callable, population_size: int, max_itr: int, mutation_rat
             best_solution = best_generation_solution
             best_cost = best_generation_cost
         history['best_costs'].append(best_cost)
+        
+        # Sample from the optimization landscape
+        x_current = [random.uniform(x_range[i][0], x_range[i][1]) for i in range(len(x_range))]
         history['best_solutions'].append(best_solution)
 
         # Select parents for crossover (natural selection)
@@ -321,6 +324,68 @@ def ga(cost_function: Callable, population_size: int, max_itr: int, mutation_rat
     progress_bar.close()
 
     return best_solution, best_cost, history['best_solutions'], history['best_costs'], chromosomes
+
+##############################################################################################################
+############ Variable Neighbour Search (VNS) #################################################################
+##############################################################################################################
+def vns(cost_function: Callable, max_itr_vns: int, max_itr_ls: int, convergence_threshold_ls: float, 
+        num_neighbourhoods: int, x_range: Optional[List[List[float]]] = None) -> Tuple[np.array, float, List[np.array], List[float]]: 
+    
+    # Define Neighbourhoods (stripes)
+    neighbourhoods: List[List[List[float]]] = []
+    prev_boundary = x_range[-1][0]
+
+    for k in range(num_neighbourhoods):
+        new_boundary = prev_boundary + (x_range[-1][1] - x_range[-1][0])/num_neighbourhoods
+        neighbourhood = x_range[:-1] + [[prev_boundary, new_boundary]]
+        prev_boundary = new_boundary
+        neighbourhoods.append(neighbourhood)
+    random.shuffle(neighbourhoods)
+
+    # Initialize local search
+    k = 0
+    current_neighbourhood = neighbourhoods[k]
+
+    x_current = [random.uniform(current_neighbourhood[i][0], current_neighbourhood[i][1]) for i in range(len(x_range))]
+    cost_current = cost_function(x_current)
+
+    x_history = [x_current]
+    cost_history = [cost_current]
+
+    best_x = x_current
+    best_cost = cost_current
+
+    progress_bar = tqdm(total=max_itr_vns, desc='VNS Iterations')
+    print(f"max iterations vns {max_itr_vns}")
+    for _ in range(max_itr_vns):
+        ls_best_x, ls_best_cost, _, _ = local_search(cost_function=cost_function, max_itr=max_itr_ls, convergence_threshold=convergence_threshold_ls,
+                                                     x_range=current_neighbourhood, hide_progress_bar=True)     
+
+        # Determine Neighbourhood Change
+        if ls_best_cost < best_cost:
+            k = 0
+            best_cost = ls_best_cost
+            best_x = ls_best_x
+        else:
+            k = (k+1) % num_neighbourhoods
+        current_neighbourhood = neighbourhoods[k]  
+
+        x_history.append(ls_best_x)
+        cost_history.append(ls_best_cost) 
+
+        # Update tqdm progress bar
+        progress_bar.update(1)
+    
+    progress_bar.close()
+
+    print(f"best X: {best_x}")
+    print(f"best cost: {best_cost}")
+
+    return best_x, best_cost, x_history, cost_history
+
+
+    
+
 
 ##############################################################################################################
 ############ Helper Functions ################################################################################
